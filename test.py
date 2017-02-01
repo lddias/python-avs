@@ -145,7 +145,7 @@ def hotword_detect(logger, q, mic_stopped):
                 try:
                     return self._stream.read(size)
                 except:
-                    pass
+                    logger.exception("exception while reading from pyaudio stream")
 
     q.put(('hotword', StoppableAudioStream(paudio, mic_stream), mic_stopped))
 
