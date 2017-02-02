@@ -3,3 +3,4 @@ requests
 requests-toolbelt
 python-dateutil
 pytz
+-e git://github.com/lddias/hyper.git#egg=hyper

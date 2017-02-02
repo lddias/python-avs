@@ -370,7 +370,6 @@ class AVS:
                 def __init__(self):
                     self._audio_closed = False
                     self.content_type = 'multipart/form-data; boundary={}'.format(boundary_term)
-                    self._of = open('recognize_request.txt', 'wb')
 
                 def read(self, size=-1):
                     nonlocal body
@@ -390,7 +389,6 @@ class AVS:
                         if len(epilogue):
                             ret += epilogue[:size]
                             epilogue = epilogue[size:]
-                    self._of.write(ret)
                     return ret
 
             return MultiPartAudioFileLike()
@@ -426,13 +424,13 @@ class AVS:
         else:
             return ds_id, resp
 
-    def recognize_speech(self, speech, mic_stop_event):
+    def recognize_speech(self, speech, mic_stop_event=None):
         """
         send recognize speech event and process the response
 
         :param speech: file-like containing speech for request
         :param mic_stop_event: threading.Event when speech is an infinite stream, to monitor for signal from
-            downchannel stream to end the recognize request. when speech is finite, can be None
+                               downchannel stream to end the recognize request.
         """
         self._mic_stop_event = mic_stop_event
         self.handle_parts(self.send_event_parse_response(self._generate_recognize_payload(speech)))

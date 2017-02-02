@@ -1,4 +1,0 @@
-[submodule "hyper"]
-	path = hyper
-	url = git@github.com:lddias/hyper.git
-    branch = development
