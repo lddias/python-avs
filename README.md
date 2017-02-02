@@ -95,6 +95,7 @@ class StoppableAudioStream:
 a.recognize_speech(StoppableAudioStream(paudio, mic_stream), mic_stopped)
 ```
 ##Installation
+###External Dependencies
 This package depends on common python packages as well as my fork of https://github.com/Lukasa/hyper, which has some changes necessary for simultaneous Tx & Rx
 ```bash
 pip install -r requirements.txt
@@ -193,8 +194,8 @@ class AfplayAudioDevice(AudioDevice):
     def ended(self, p):
         return p.poll() is not None
 ```
-##Test Client Setup
-The test client `test.py` is provided which has been tested on macOS and raspbian.
+##Test Client
+The test client `test.py` is provided which has been tested on macOS and raspbian. It uses https://github.com/Kitt-AI/snowboy for detection of the hotword "Alexa" and `pyaudio` for microphone input.
 
 1. At least one of `mplayer` and `afplay` must be available on the system.
 2. The files `tokens.txt` and `secrets.txt` must be present in the working directory. The `tokens.txt` schema is shown above; the `secrets.txt` schema is as follows:
@@ -205,7 +206,18 @@ The test client `test.py` is provided which has been tested on macOS and raspbia
         "client_secret": "my_client_secret"
     }
     ```
-3. After installing the requirements, run `python test.py`
+3. After installing the [requirements](#external-dependencies), get https://github.com/Kitt-AI/snowboy and follow the general installation instructions and specific ones for swig for Python.
+
+4. `pyaudio` should now be installed; if not please install it. If you install a system package for `pyaudio` and you are using virtualenv and you are unable to import it, see http://stackoverflow.com/questions/3371136/revert-the-no-site-packages-option-with-virtualenv. Now symoblically link the following into the working directory:
+
+    ```bash
+    ln -s /path/to/snowboy/resources/ .
+    ln -s /path/to/snowboy/examples/Python/snowboydecoder.py .
+    ln -s /path/to/snowboy/examples/Python/snowboydetect.py .
+    ln -s /path/to/snowboy/examples/Python/_snowboydetect.so .    
+    ```
+
+4. run `python test.py`
 
 ##Notes
 * Tested with Python 3.4
