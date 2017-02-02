@@ -6,11 +6,11 @@ import json
 import queue
 import threading
 import datetime
-
-import pyaudio
 import shutil
 
+import pyaudio
 import snowboydecoder
+
 from debug import fake_mic2, fake_mic
 from util import multipart_parse
 import avs
