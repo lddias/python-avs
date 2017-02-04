@@ -1,6 +1,5 @@
 requests
 requests-toolbelt
-PyAudio==0.2.10
 python-dateutil
 pytz
 ujson
