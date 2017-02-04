@@ -4,4 +4,4 @@ PyAudio==0.2.10
 python-dateutil
 pytz
 ujson
--e git://github.com/lddias/hyper.git#egg=hyper
+-e git://github.com/lddias/hyper.git@development#egg=hyper
