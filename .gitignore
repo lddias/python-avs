@@ -1,0 +1,11 @@
+__pycache__
+.idea
+tokens.txt
+secrets.txt
+alarm.wav
+timer.wav
+snowboydetect.py
+snowboydecoder.py
+_snowboydetect.so
+resources
+
