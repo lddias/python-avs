@@ -1,6 +1,7 @@
-ujson
 requests
 requests-toolbelt
+PyAudio==0.2.10
 python-dateutil
 pytz
+ujson
 -e git://github.com/lddias/hyper.git#egg=hyper

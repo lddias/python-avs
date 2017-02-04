@@ -140,12 +140,18 @@ def hotword_detect(logger, q, mic_stopped):
             if self._stopped:
                 logger.warning("READING FROM MIC WHILE CLOSED")
                 return b''
-            # workaround for pyaudio versions before exception_on_overflow=False
-            while True:
+            try:
+                return self._stream.read(size, exception_on_overflow=False)
+            except:
+                logger.exception("exception while reading from pyaudio stream")
+                self._stopped = True
                 try:
-                    return self._stream.read(size)
+                    self._stream.stop_stream()
+                    self._stream.close()
+                    self._audio.terminate()
                 except:
-                    logger.exception("exception while reading from pyaudio stream")
+                    pass
+                return b''
 
     q.put(('hotword', StoppableAudioStream(paudio, mic_stream), mic_stopped))
 
