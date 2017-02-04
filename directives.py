@@ -208,12 +208,10 @@ class Alert:
     def set_active(self, active):
         self._active = active
 
-    @property
-    def process(self):
+    def get_process(self):
         return self._process
 
-    @process.setter
-    def process(self, p):
+    def set_process(self, p):
         self._process = p
 
 
@@ -315,7 +313,7 @@ class Alerts:
 
         def handle(self, avs):
             alert = avs.get_alert(self.token)
-            avs.audio_device.stop(alert.process)
+            avs.audio_device.stop(alert.get_process())
             avs.send_event_parse_response(generate_payload(self._generate_alert_stopped_event()))
             avs.remove_alert(alert)
             avs.send_event_parse_response(generate_payload(self._generate_delete_alert_succeeded_event()))

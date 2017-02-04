@@ -484,10 +484,10 @@ class AVS:
         :param alert: Alert to start
         """
         self.handle_parts(self.send_event_parse_response(generate_payload(self._generate_alert_started_event(alert))))
-        alert._active = True
+        alert.set_active(True)
         logger.info("PLAYING {}: {}".format(alert.type, alert.token))
         audio_filename = 'alarm.wav' if alert.type == 'ALARM' else 'timer.wav' if alert.type == 'TIMER' else None
-        alert._process = self.audio_device.play_infinite(audio_filename)
+        alert.set_process(self.audio_device.play_infinite(audio_filename))
 
     def stop_capture(self):
         """
