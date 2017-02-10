@@ -152,7 +152,7 @@ class SpeechSynthesizer:
 
         def handle(self, avs):
             if self._audio:
-                logger.info("handling Speak directive")
+                logger.debug("handling Speak directive")
                 # send SpeechStarted event
                 avs.send_event_parse_response(generate_payload(self._generate_speech_started_event()))
                 # play speech
@@ -260,7 +260,7 @@ class Alerts:
             return False
 
         def handle(self, avs):
-            logger.info("ADDING ALERT {}".format(self._alert))
+            logger.debug("handling AddAlert directive {}".format(self._alert))
             avs.add_alert(self._alert)
             # scheduler.enter takes the delay in time units from now
             # AVS alerts have an ISO8601 scheduledTime which we assume has a timezone
@@ -319,6 +319,7 @@ class Alerts:
             return False
 
         def handle(self, avs):
+            logger.debug("Handling DeleteAlert directive")
             try:
                 alert = avs.get_alert(self.token)
             except StopIteration:
@@ -450,7 +451,7 @@ class AudioPlayer:
             return False
 
         def handle(self, avs):
-            logging.debug("Handling AudioPlayer Play directive: {}".format(json.dumps(self.audio_item)))
+            logger.debug("Handling AudioPlayer Play directive: {}".format(json.dumps(self.audio_item)))
             if self.play_behavior == 'REPLACE_ALL':
                 avs.player.stop()
                 avs.player.clear_queue()
@@ -469,7 +470,7 @@ class AudioPlayer:
         https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/audioplayer#stopdirective
         """
         def handle(self, avs):
-            logging.debug("Handling AudioPlayer Stop directive")
+            logger.debug("Handling AudioPlayer Stop directive")
             avs.player.stop()
             return True
 
@@ -482,6 +483,7 @@ class AudioPlayer:
             self.clear_behavior = data['directive']['payload']['clearBehavior']
 
         def handle(self, avs):
+            logger.debug("Handling ClearQueue directive")
             if self.clear_behavior == 'CLEAR_ALL':
                 avs.player.stop()
             avs.player.clear_queue()
