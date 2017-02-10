@@ -66,6 +66,7 @@ class AVS:
         self.audio_device = audio_device
         self._audio_input_device = audio_input_device
         self._stopping = threading.Event()
+        self._current_dialog_request_id = None
 
         logger.info("Connecting...")
         # we have to force protocol to http2 here because the ALPN is failing or something
@@ -266,6 +267,7 @@ class AVS:
         :param profile: str ASR profile to use, eg. CLOSE_TALK or NEAR_FIELD
         :return: dict event payload
         """
+        self._current_dialog_request_id = str(uuid.uuid4())
         return {
             "context": self._generate_context(),
             "event": {
@@ -273,7 +275,7 @@ class AVS:
                     "namespace": "SpeechRecognizer",
                     "name": "Recognize",
                     "messageId": str(uuid.uuid4()),
-                    "dialogRequestId": str(uuid.uuid4())
+                    "dialogRequestId": self._current_dialog_request_id
                 },
                 "payload": {
                     "profile": profile,
@@ -348,10 +350,11 @@ class AVS:
 
         if not all(consume_content(headers, data, directives) for headers, data in non_directives):
             logger.warning("left over contents")
-        for directive in (d for d in directives if d):
+        for directive in (d for d in directives if d and d.dialogRequestId in [None, self._current_dialog_request_id]):
             directive.on_receive(self)
         # TODO check if extend is thread-safe
-        self._directives.extend(d for d in directives if d)
+        self._directives.extend(d for d in directives if d and d.dialogRequestId == self._current_dialog_request_id)
+        self._directives[:0] = (d for d in directives if d and d.dialogRequestId is None)
         logging.debug("directives after after: {}".format(self._directives))
 
     def _handle_directives(self):
