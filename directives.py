@@ -412,7 +412,9 @@ class AudioItem:
             r = s.get(self.stream.url)
             logger.debug('content type: {} content: {}'.format(r.headers.get('Content-Type'), r.content))
             if 'audio/x-mpegurl' in r.headers.get('Content-Type', ''):
-                r = s.get(next(r.iter_lines()))
+                url = next(r.iter_lines())
+                logger.info("audio stream x-mpegurl: {}".format(url))
+                return url
             open(filename, 'wb').write(r.content)
         return filename
 

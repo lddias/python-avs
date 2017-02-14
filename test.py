@@ -18,15 +18,17 @@ from audio_player import AudioDevice
 
 
 class MplayerAudioDevice(AudioDevice):
-    def __init__(self):
+    def __init__(self, binary_path, options=None):
+        self._binary_path = binary_path
         self._paused = False
+        self._options = options or []
 
     def check_exists(self):
-        return shutil.which('mplayer')
+        return shutil.which(self._binary_path)
 
     def play_once(self, file):
         try:
-            return subprocess.Popen(["mplayer", "-ao", "alsa", "-really-quiet", "-noconsolecontrols", "-slave", file],
+            return subprocess.Popen([self._binary_path] + self._options + [file],
                                     stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
         except Exception:
             logger.exception("Couldn't play audio")
@@ -34,7 +36,7 @@ class MplayerAudioDevice(AudioDevice):
     def play_infinite(self, file):
         try:
             return subprocess.Popen(
-                ["mplayer", "-ao", "alsa", "-really-quiet", "-noconsolecontrols", "-slave", "-loop", "0", file],
+                [self._binary_path] + self._options + ["-loop", "0", file],
                 stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
         except:
             logger.exception("Couldn't play audio")
@@ -56,37 +58,11 @@ class MplayerAudioDevice(AudioDevice):
         return p.poll() is not None
 
 
-class AfplayAudioDevice(AudioDevice):
-    def check_exists(self):
-        return shutil.which('afplay')
 
-    def play_once(self, file):
+
+
         try:
-            return subprocess.Popen(["afplay", file])
-        except Exception:
-            logger.exception("Couldn't play audio")
 
-    def play_infinite(self, file):
-        try:
-            return subprocess.Popen(["while :; do afplay {}; done".format(file)], shell=True)
-        except Exception:
-            logger.exception("Couldn't play audio")
-
-    def stop(self, p):
-        p.terminate()
-        try:
-            p.wait(5)
-        except subprocess.TimeoutExpired:
-            p.kill()
-
-    def pause(self, p):
-        p.send_signal(signal.SIGSTOP)
-
-    def resume(self, p):
-        p.send_signal(signal.SIGCONT)
-
-    def ended(self, p):
-        return p.poll() is not None
 
 
 def hotword_detect(logger, q, mic_stopped):
@@ -171,13 +147,14 @@ if __name__ == '__main__':
     tokens = json.load(open('tokens.txt'))
     secrets = json.load(open('secrets.txt'))
     q = queue.Queue()
-    audio_devices = [MplayerAudioDevice(), AfplayAudioDevice()]
+    audio_devices = [MplayerAudioDevice('mplayer', ["-ao", "alsa", "-really-quiet", "-noconsolecontrols", "-slave"]),
+                     MplayerAudioDevice('/Applications/MPlayer OSX Extended.app/Contents/Resources/Binaries/mpextended.mpBinaries/Contents/MacOS/mplayer', ["-really-quiet", "-noconsolecontrols", "-slave"])]
     a = avs.AVS('v20160207',
                 tokens.get('access_token'),
                 tokens.get('refresh_token'),
                 secrets.get('client_id'),
                 secrets.get('client_secret'),
-                next(audio_device for audio_device in audio_devices if audio_device.check_exists()))
+                next(audio_device for audio_device in audio_devices if audio_device.check_exists()),
 
     mic_stopped = threading.Event()
 
