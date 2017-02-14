@@ -12,6 +12,7 @@ import pyaudio
 
 import snowboydecoder
 from debug import fake_mic2, fake_mic
+from speech_recognizer import AudioInputDevice
 from util import multipart_parse
 import avs
 from audio_player import AudioDevice
@@ -58,11 +59,45 @@ class MplayerAudioDevice(AudioDevice):
         return p.poll() is not None
 
 
+class PyAudioInputDevice(AudioInputDevice):
+    def start_recording(self):
+        audio = pyaudio.PyAudio()
 
+        # start Recording
+        stream = audio.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=1024)
+        logger.info("recording...")
 
+        self._audio = audio
+        self._stream = stream
+        self._stopped = False
+        self._event = threading.Event()
 
+    def read(self, size=-1):
+        if self._event.is_set():
+            logger.info("MIC STOP REQUESTED")
+            self._stopped = True
+            self._stream.stop_stream()
+            self._stream.close()
+            self._audio.terminate()
+            self._event.clear()
+        if self._stopped:
+            logger.warning("READING FROM MIC WHILE CLOSED")
+            return b''
         try:
+            return self._stream.read(size, exception_on_overflow=False)
+        except:
+            logger.exception("exception while reading from pyaudio stream")
+            self._stopped = True
+            try:
+                self._stream.stop_stream()
+                self._stream.close()
+                self._audio.terminate()
+            except:
+                pass
+            return b''
 
+    def stop_recording(self):
+        self._event.set()
 
 
 def hotword_detect(logger, q, mic_stopped):
@@ -124,7 +159,7 @@ def hotword_detect(logger, q, mic_stopped):
 
 def start_hotword_detection_thread():
     hdt = threading.Thread(target=hotword_detect, name='Hotword Detection Thread', args=(logger, q, mic_stopped))
-    hdt.setDaemon(True)
+    hdt.setDaemon(False)
     hdt.start()
 
 
@@ -155,6 +190,7 @@ if __name__ == '__main__':
                 secrets.get('client_id'),
                 secrets.get('client_secret'),
                 next(audio_device for audio_device in audio_devices if audio_device.check_exists()),
+                None)
 
     mic_stopped = threading.Event()
 

@@ -35,6 +35,7 @@ class AVS:
                  client_id,
                  client_secret,
                  audio_device,
+                 audio_input_device,
                  host='avs-alexa-na.amazon.com'):
         """
         connects to AVS and synchronizes state
@@ -63,6 +64,7 @@ class AVS:
         self.scheduler = sched.scheduler()
         self._mic_stop_event = None
         self.audio_device = audio_device
+        self._audio_input_device = audio_input_device
         self._stopping = threading.Event()
 
         logger.info("Connecting...")
