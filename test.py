@@ -89,16 +89,6 @@ class AfplayAudioDevice(AudioDevice):
         return p.poll() is not None
 
 
-def downstream_directives():
-    # check directives
-    for push in a._dc_resp.read_chunked():
-        logger.info("[{}] DOWNSTREAM DIRECTIVE RECEIVED: {}".format(datetime.datetime.now().isoformat(), push))
-        parts = multipart_parse(push, a._dc_resp.headers['content-type'][0].decode())
-        a.handle_parts(parts)
-    # TODO: reconnect when this happens
-    logger.warning("downstream finished read_chunked!")
-
-
 def hotword_detect(logger, q, mic_stopped):
     interrupted = False
 
@@ -190,10 +180,6 @@ if __name__ == '__main__':
                 next(audio_device for audio_device in audio_devices if audio_device.check_exists()))
 
     mic_stopped = threading.Event()
-
-    ddt = threading.Thread(target=downstream_directives, name='Downstream Directives Thread')
-    ddt.setDaemon(False)
-    ddt.start()
 
     start_hotword_detection_thread()
     while True:

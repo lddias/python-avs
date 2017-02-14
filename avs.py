@@ -1,8 +1,10 @@
 import io
 import logging
 import sched
+import threading
 import ujson as json
 import uuid
+import datetime
 
 from h2.exceptions import StreamClosedError
 from requests_toolbelt import MultipartEncoder
@@ -61,6 +63,7 @@ class AVS:
         self.scheduler = sched.scheduler()
         self._mic_stop_event = None
         self.audio_device = audio_device
+        self._stopping = threading.Event()
 
         logger.info("Connecting...")
         # we have to force protocol to http2 here because the ALPN is failing or something
@@ -73,6 +76,24 @@ class AVS:
         logger.info("Synchronizing state with AVS...")
         self.handle_parts(self.send_event_parse_response(generate_payload(self._generate_synchronize_state_event())))
         logger.info("Synchronized state with AVS")
+
+        def downstream_directives():
+            while not self._stopping.is_set():
+                # check directives
+                for push in self._dc_resp.read_chunked():
+                    logger.info("[{}] DOWNSTREAM DIRECTIVE RECEIVED: {}".format(datetime.datetime.now().isoformat(), push))
+                    parts = multipart_parse(push, self._dc_resp.headers['content-type'][0].decode())
+                    self.handle_parts(parts)
+                # TODO: reconnect when this happens
+                logger.warning("downstream finished read_chunked!")
+                logger.info("Establishing downchannel stream...")
+                self._downchannel_stream_id, self._dc_resp = self._establish_downstream_directives_channel()
+                logger.info("Established downchannel stream")
+
+        logger.info("Starting downstream thread")
+        self._ddt = threading.Thread(target=downstream_directives, name='Downstream Directives Thread')
+        self._ddt.setDaemon(False)
+        self._ddt.start()
 
     def _get_alert_state(self):
         """
@@ -523,3 +544,12 @@ class AVS:
         :param alert: Alert to remove
         """
         self._alerts.remove(alert)
+
+    def close(self):
+        logging.info("CLOSING AVS")
+        if self._ddt.is_alive():
+            logging.info("DDT STILL ALIVE")
+            self._stopping.set()
+            self._dc_resp.close()
+            self._ddt.join()
+            logging.info("DDT DEAD")
