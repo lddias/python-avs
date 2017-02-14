@@ -201,6 +201,7 @@ class Alert:
         self.scheduledTime = scheduled_time
         self._active = False
         self._process = None
+        self._event = None
 
     def is_active(self):
         return self._active
@@ -213,6 +214,12 @@ class Alert:
 
     def set_process(self, p):
         self._process = p
+
+    def get_event(self):
+        return self._event
+
+    def set_event(self, event):
+        self._event = event
 
 
 class Alerts:
@@ -257,8 +264,8 @@ class Alerts:
             avs.add_alert(self._alert)
             # scheduler.enter takes the delay in time units from now
             # AVS alerts have an ISO8601 scheduledTime which we assume has a timezone
-            delay = (self.scheduledTime - datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)).seconds + 1
-            avs.scheduler.enter(delay, 1, avs.play_alert, [self._alert])
+            delay = (self.scheduledTime - datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)).total_seconds() + 1
+            self._alert.set_event(avs.scheduler.enter(delay, 1, avs.play_alert, [self._alert]))
             avs.send_event_parse_response(generate_payload(self._generate_set_alert_succeeded_event()))
             return True
 
@@ -312,8 +319,17 @@ class Alerts:
             return False
 
         def handle(self, avs):
-            alert = avs.get_alert(self.token)
-            avs.audio_device.stop(alert.get_process())
+            try:
+                alert = avs.get_alert(self.token)
+            except StopIteration:
+                logger.warning("Tried to delete non-existent timer {}".format(self.token))
+                return True
+            try:
+                avs.scheduler.cancel(alert.get_event())
+            except ValueError:
+                pass
+            if alert.get_process():
+                avs.audio_device.stop(alert.get_process())
             avs.send_event_parse_response(generate_payload(self._generate_alert_stopped_event()))
             avs.remove_alert(alert)
             avs.send_event_parse_response(generate_payload(self._generate_delete_alert_succeeded_event()))
