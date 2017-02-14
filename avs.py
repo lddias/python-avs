@@ -235,6 +235,8 @@ class AVS:
         response = self._connection.get_response(stream_id)
         if raises:
             assert response.status in [200, 204], "{} {}".format(response.status, response.read().decode())
+            if response.status == 204:
+                logger.warning("Received empty response (204)")
         if read:
             response.read()
         if close:
@@ -460,6 +462,7 @@ class AVS:
         """
         self._mic_stop_event = mic_stop_event
         self.handle_parts(self.send_event_parse_response(self._generate_recognize_payload(speech)))
+        logger.debug("Recognize dialog ID: {}".format(self._current_dialog_request_id))
 
     def _get_playback_offset(self):
         """
