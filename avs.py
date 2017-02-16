@@ -215,8 +215,8 @@ class AVS:
                 def __iter__(self):
                     def my_iterator():
                         while True:
-                            ret = self._data.read(320)
-                            if len(ret) < 320:
+                            ret = self._data.read(1024)
+                            if len(ret) < 1024:
                                 break
                             else:
                                 yield ret
