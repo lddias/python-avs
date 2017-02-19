@@ -19,9 +19,9 @@ from util import request_new_tokens, is_directive, multipart_parse
 logger = logging.getLogger(__name__)
 _PING_RATE = 300
 _RECOGNIZE_METADATA_PART_HEADER = b'Content-Disposition: form-data; name="metadata"\nContent-Type: application/json; ' \
-                                  b'charset=UTF-8\n\n'
+                                  b'charset=UTF-8\r\n\r\n'
 _RECOGNIZE_AUDIO_PART_HEADER = b'Content-Disposition: form-data; name="audio"\nContent-Type: ' \
-                               b'application/octet-stream\n\n'
+                               b'application/octet-stream\r\n\r\n'
 
 
 class AVS:
@@ -385,14 +385,14 @@ class AVS:
         if total_len(audio) is None:
             event = self._generate_recognize_speech_event('NEAR_FIELD')
             boundary_term = str(uuid.uuid4())
-            boundary_separator = b'--' + boundary_term.encode('utf8') + b'\n'
+            boundary_separator = b'--' + boundary_term.encode('utf8') + b'\r\n'
             body = b''.join([boundary_separator,
                              _RECOGNIZE_METADATA_PART_HEADER,
                              json.dumps(event).encode('utf8'),
-                             b'\n\n',
+                             b'\r\n\r\n',
                              boundary_separator,
                              _RECOGNIZE_AUDIO_PART_HEADER])
-            epilogue = b'\n\n--' + boundary_term.encode('utf8') + b'--'
+            epilogue = b'\r\n--' + boundary_term.encode('utf8') + b'--\r\n'
 
             class MultiPartAudioFileLike:
                 def __init__(self):
