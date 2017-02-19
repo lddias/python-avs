@@ -215,8 +215,8 @@ class AVS:
                 def __iter__(self):
                     def my_iterator():
                         while True:
-                            ret = self._data.read(1024)
-                            if len(ret) < 1024:
+                            ret = self._data.read(320)
+                            if len(ret) < 320:
                                 break
                             else:
                                 yield ret
@@ -398,6 +398,7 @@ class AVS:
                 def __init__(self):
                     self._audio_closed = False
                     self.content_type = 'multipart/form-data; boundary={}'.format(boundary_term)
+                    self._audio_buffer = b''
 
                 def read(self, size=-1):
                     nonlocal body
@@ -406,17 +407,24 @@ class AVS:
                     if len(body):
                         ret = body[:size]
                         body = body[size:]
-                    size -= len(ret)
-                    if size and not self._audio_closed:
-                        audio_data = audio.read(size)
-                        if len(audio_data) < size:
+                    remaining = size - len(ret)
+                    if remaining and len(self._audio_buffer):
+                        ret += self._audio_buffer[:remaining]
+                        self._audio_buffer = self._audio_buffer[remaining:]
+                    remaining = size - len(ret)
+                    if remaining and not self._audio_closed:
+                        audio_data = audio.read(remaining)
+                        logger.debug("Audio read returned {} bytes".format(len(audio_data)))
+                        if len(audio_data) < remaining:
                             self._audio_closed = True
-                        ret += audio_data
-                        size -= len(audio_data)
-                    if size:
+                        self._audio_buffer += audio_data
+                        ret += self._audio_buffer[:remaining]
+                        self._audio_buffer = self._audio_buffer[remaining:]
+                    remaining = size - len(ret)
+                    if remaining:
                         if len(epilogue):
-                            ret += epilogue[:size]
-                            epilogue = epilogue[size:]
+                            ret += epilogue[:remaining]
+                            epilogue = epilogue[remaining:]
                     return ret
 
             return MultiPartAudioFileLike()

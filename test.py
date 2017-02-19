@@ -1,11 +1,9 @@
 import logging
 import sys
-import signal
 import subprocess
 import json
 import queue
 import threading
-import datetime
 import shutil
 
 import pyaudio
@@ -13,7 +11,6 @@ import pyaudio
 import snowboydecoder
 from debug import fake_mic2, fake_mic
 from speech_recognizer import AudioInputDevice
-from util import multipart_parse
 import avs
 from audio_player import AudioDevice
 
