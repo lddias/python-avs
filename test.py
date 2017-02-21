@@ -9,7 +9,6 @@ import shutil
 import pyaudio
 
 import snowboydecoder
-from debug import fake_mic2, fake_mic
 from speech_recognizer import AudioInputDevice
 import avs
 from audio_player import AudioDevice
@@ -115,46 +114,10 @@ def hotword_detect(logger, q, mic_stopped):
                    sleep_time=0.03)
     detector.terminate()
 
-    paudio = pyaudio.PyAudio()
-
-    # start Recording
-    mic_stream = paudio.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=1024)
-    logger.info("recording...")
-
-    class StoppableAudioStream:
-        def __init__(self, audio, stream):
-            self._audio = audio
-            self._stream = stream
-            self._stopped = False
-
-        def read(self, size=-1):
-            if mic_stopped.is_set():
-                logger.info("MIC STOP REQUESTED")
-                self._stopped = True
-                self._stream.stop_stream()
-                self._stream.close()
-                self._audio.terminate()
-                mic_stopped.clear()
-            if self._stopped:
-                logger.warning("READING FROM MIC WHILE CLOSED")
-                return b''
-            try:
-                return self._stream.read(size, exception_on_overflow=False)
-            except:
-                logger.exception("exception while reading from pyaudio stream")
-                self._stopped = True
-                try:
-                    self._stream.stop_stream()
-                    self._stream.close()
-                    self._audio.terminate()
-                except:
-                    pass
-                return b''
-
-    q.put(('hotword', StoppableAudioStream(paudio, mic_stream), mic_stopped))
+    q.put(('hotword',))
 
 
-def start_hotword_detection_thread():
+def start_hotword_detection_thread(q):
     hdt = threading.Thread(target=hotword_detect, name='Hotword Detection Thread', args=(logger, q, mic_stopped))
     hdt.setDaemon(False)
     hdt.start()
@@ -187,19 +150,20 @@ if __name__ == '__main__':
                 secrets.get('client_id'),
                 secrets.get('client_secret'),
                 next(audio_device for audio_device in audio_devices if audio_device.check_exists()),
-                None)
+                PyAudioInputDevice(),
+                'NEAR_FIELD')
 
     mic_stopped = threading.Event()
 
-    start_hotword_detection_thread()
+    start_hotword_detection_thread(q)
     while True:
         try:
             job = q.get(block=False)
             if job[0] == 'hotword':
                 logger.info("STARTING RECOGNIZE SPEECH")
-                a.recognize_speech(job[1], job[2])
+                a.recognize_speech()
                 logger.info("FINISHED RECOGNIZE SPEECH")
-                start_hotword_detection_thread()
+                start_hotword_detection_thread(q)
             else:
                 logger.error("unknown command: {}".format(job))
         except queue.Empty:

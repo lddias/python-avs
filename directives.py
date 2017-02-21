@@ -11,6 +11,7 @@ import requests
 from requests_toolbelt import MultipartEncoder
 
 import speech_synthesizer
+from speech_recognizer import SPEECH_CLOUD_ENDPOINTING_PROFILES
 
 logger = logging.getLogger(__name__)
 
@@ -177,16 +178,50 @@ class SpeechRecognizer:
     """
     SpeechRecognizer namespace directives
     """
+
     class StopCapture(Directive):
         """
         https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/speechrecognizer#stopcapture
         """
-        def __init__(self, data):
-            super().__init__(data)
-            self.immediate_safe = True
 
         def on_receive(self, avs):
             avs.stop_capture()
+
+    class ExpectSpeech(Directive):
+        """
+        https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/speechrecognizer#expectspeech
+        """
+
+        def __init__(self, data):
+            super().__init__(data)
+            self.timeout_in_milliseconds = data['directive']['payload']['timeoutInMilliseconds']
+
+        def _generate_expect_speect_timed_out_event(self):
+            """
+            https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/reference/speechrecognizer#expectspeechtimedout
+
+            :return: dict event payload
+            """
+            return {
+                "event": {
+                    "header": {
+                        "namespace": "SpeechRecognizer",
+                        "name": "ExpectSpeechTimedOut",
+                        "messageId": str(uuid.uuid4()),
+                    },
+                    "payload": {
+                    }
+                }
+            }
+
+        def _expect_speect_timed_out(self, avs):
+            avs.send_event_parse_response(generate_payload(self._generate_expect_speect_timed_out_event()))
+
+        def handle(self, avs):
+            if avs.speech_profile in SPEECH_CLOUD_ENDPOINTING_PROFILES:
+                avs.recognize_speech()
+            else:
+                avs.expect_speech_timeout_event = avs.scheduler.enter(self.timeout_in_milliseconds / 1000.0, 1, self._expect_speect_timed_out, [avs])
 
 
 class Alert:

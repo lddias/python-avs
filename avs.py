@@ -14,6 +14,8 @@ import audio_player
 import speech_synthesizer
 from directives import to_directive, generate_payload
 from hyper import HTTP20Connection as HTTPConnection
+
+from speech_recognizer import SPEECH_CLOUD_ENDPOINTING_PROFILES
 from util import request_new_tokens, is_directive, multipart_parse
 
 logger = logging.getLogger(__name__)
@@ -36,6 +38,7 @@ class AVS:
                  client_secret,
                  audio_device,
                  audio_input_device,
+                 speech_profile,
                  host='avs-alexa-na.amazon.com'):
         """
         connects to AVS and synchronizes state
@@ -62,11 +65,13 @@ class AVS:
         self._speech_state = speech_synthesizer.FINISHED
         # scheduler is threadsafe as of 3.3 (https://docs.python.org/3/library/sched.html)
         self.scheduler = sched.scheduler()
-        self._mic_stop_event = None
         self.audio_device = audio_device
         self._audio_input_device = audio_input_device
+        assert speech_profile in ['CLOSE_TALK', 'NEAR_FIELD', 'FAR_FIELD']
+        self.speech_profile = speech_profile
         self._stopping = threading.Event()
         self._current_dialog_request_id = None
+        self.expect_speech_timeout_event = None
 
         logger.info("Connecting...")
         # we have to force protocol to http2 here because the ALPN is failing or something
@@ -382,8 +387,8 @@ class AVS:
         :param audio: file-like containing audio for request.
         :return: file-like containing the payload for the http request
         """
+        event = self._generate_recognize_speech_event(self.speech_profile)
         if total_len(audio) is None:
-            event = self._generate_recognize_speech_event('NEAR_FIELD')
             boundary_term = str(uuid.uuid4())
             boundary_separator = b'--' + boundary_term.encode('utf8') + b'\r\n'
             body = b''.join([boundary_separator,
@@ -429,7 +434,6 @@ class AVS:
 
             return MultiPartAudioFileLike()
         else:
-            event = self._generate_recognize_speech_event('CLOSE_TALK')
             payload = MultipartEncoder({
                 'metadata': (None, io.BytesIO(json.dumps(event).encode()), 'application/json'),
                 'audio': (None, audio, 'application/octet-stream')
@@ -460,7 +464,7 @@ class AVS:
         else:
             return ds_id, resp
 
-    def recognize_speech(self, speech, mic_stop_event=None):
+    def recognize_speech(self):
         """
         send recognize speech event and process the response
 
@@ -468,8 +472,11 @@ class AVS:
         :param mic_stop_event: threading.Event when speech is an infinite stream, to monitor for signal from
                                downchannel stream to end the recognize request.
         """
-        self._mic_stop_event = mic_stop_event
-        self.handle_parts(self.send_event_parse_response(self._generate_recognize_payload(speech)))
+        if self.speech_profile not in SPEECH_CLOUD_ENDPOINTING_PROFILES:
+            if self.expect_speech_timeout_event:
+                self.scheduler.cancel(self.expect_speech_timeout_event)
+        self._audio_input_device.start_recording()
+        self.handle_parts(self.send_event_parse_response(self._generate_recognize_payload(self._audio_input_device)))
         logger.debug("Recognize dialog ID: {}".format(self._current_dialog_request_id))
 
     def _get_playback_offset(self):
@@ -529,10 +536,9 @@ class AVS:
     def stop_capture(self):
         """
         called by downchannel directive stream when handling StopCapture directive. signals mic input capturing thread
-        to stop capture via _mic_stop_event.
+        to stop capture.
         """
-        if self._mic_stop_event:
-            self._mic_stop_event.set()
+        self._audio_input_device.stop_recording()
 
     def add_alert(self, alert):
         """
