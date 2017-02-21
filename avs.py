@@ -419,7 +419,6 @@ class AVS:
                     remaining = size - len(ret)
                     if remaining and not self._audio_closed:
                         audio_data = audio.read(remaining)
-                        logger.debug("Audio read returned {} bytes".format(len(audio_data)))
                         if len(audio_data) < remaining:
                             self._audio_closed = True
                         self._audio_buffer += audio_data

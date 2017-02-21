@@ -138,7 +138,7 @@ class AudioDevice:
         """
         return False
 
-    def play_once(self, file):
+    def play_once(self, file, playlist=False):
         """
         starts playback of the audiofile located at path `file`
 
@@ -209,7 +209,7 @@ class Player:
         """
         payload = generate_payload(generate_playback_started_event(audio_item.stream.token))
         logging.debug("PLAYBACK STARTED RESPONSE: {}".format(self._avs.send_event_parse_response(payload)))
-        audio_item._process = self._avs.audio_device.play_once(audio_item.get_file_path())
+        audio_item._process = self._avs.audio_device.play_once(*audio_item.get_file_path())
         self._currently_playing = audio_item
         self._state = PLAYING
         # TODO: this is not really the condition to send nearly_finished according to the docs...

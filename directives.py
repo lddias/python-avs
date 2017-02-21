@@ -452,13 +452,15 @@ class AudioItem:
             filename = '/tmp/{}.mp3'.format(base64.urlsafe_b64encode(str(uuid.uuid4()).encode()))
             s = requests.session()
             r = s.get(self.stream.url)
-            logger.debug('content type: {} content: {}'.format(r.headers.get('Content-Type'), r.content))
             if 'audio/x-mpegurl' in r.headers.get('Content-Type', ''):
                 url = next(r.iter_lines())
                 logger.info("audio stream x-mpegurl: {}".format(url))
-                return url
+                r = s.get(url)
+                if 'audio/x-scpls' in r.headers.get('Content-Type'):
+                    return url, True
+                return url, False
             open(filename, 'wb').write(r.content)
-        return filename
+        return filename, False
 
 
 class AudioPlayer:

@@ -23,9 +23,9 @@ class MplayerAudioDevice(AudioDevice):
     def check_exists(self):
         return shutil.which(self._binary_path)
 
-    def play_once(self, file):
+    def play_once(self, file, playlist=False):
         try:
-            return subprocess.Popen([self._binary_path] + self._options + [file],
+            return subprocess.Popen([self._binary_path] + self._options + (['-playlist'] if playlist else []) + [file],
                                     stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
         except Exception:
             logger.exception("Couldn't play audio")
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     # set new root logger handlers
     logging.basicConfig(stream=sys.stdout,
                         format='[%(asctime)s][%(threadName)s][%(levelname)-5.5s][%(pathname)s:%(lineno)d] %(message)s',
-                        level=logging.INFO)
+                        level=logging.DEBUG)
 
     # when we log below WARNING, these libraries are a bit too verbose for me
     logging.getLogger('hpack').setLevel(logging.WARNING)
