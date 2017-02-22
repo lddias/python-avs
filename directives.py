@@ -455,8 +455,9 @@ class AudioItem:
             if 'audio/x-mpegurl' in r.headers.get('Content-Type', ''):
                 url = next(r.iter_lines())
                 logger.info("audio stream x-mpegurl: {}".format(url))
-                r = s.get(url)
-                if 'audio/x-scpls' in r.headers.get('Content-Type'):
+                r = s.head(url)
+                logger.debug(r.headers)
+                if 'audio/x-scpls' in r.headers.get('Content-Type', ''):
                     return url, True
                 return url, False
             open(filename, 'wb').write(r.content)
