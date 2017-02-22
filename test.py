@@ -131,7 +131,7 @@ if __name__ == '__main__':
     # set new root logger handlers
     logging.basicConfig(stream=sys.stdout,
                         format='[%(asctime)s][%(threadName)s][%(levelname)-5.5s][%(pathname)s:%(lineno)d] %(message)s',
-                        level=logging.DEBUG)
+                        level=logging.WARNING)
 
     # when we log below WARNING, these libraries are a bit too verbose for me
     logging.getLogger('hpack').setLevel(logging.WARNING)
