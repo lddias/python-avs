@@ -198,7 +198,7 @@ class AfplayAudioDevice(AudioDevice):
 The test client `test.py` is provided which has been tested on macOS and raspbian. It uses https://github.com/Kitt-AI/snowboy for detection of the hotword "Alexa" and `pyaudio` for microphone input.
 
 1. At least one of `mplayer` and `afplay` must be available on the system.
-2. The files `tokens.txt` and `secrets.txt` must be present in the working directory. The `tokens.txt` schema is shown above; the `secrets.txt` schema is as follows:
+2. The files `tokens.txt` and `secrets.txt` must be present in the working directory. The `tokens.txt` schema is shown in [Notes](#notes); the `secrets.txt` schema is as follows:
 
     ```json
     {
