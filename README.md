@@ -2,7 +2,7 @@
 A Python3 client for AVS API v20160207
 
 All\* AVS directives are supported. You can even send speech Recognize requests with streaming microphone input (NEAR/FAR_FIELD profiles).
-##Usage
+## Usage
 
 1. Create AVS client
     ```python
@@ -32,7 +32,7 @@ see installation notes on how to create [`audio_device`](#audiodevice-setup)
         # and other requests
     ```
 
-###Making Requests
+### Making Requests
 Make speech recognize requests with pre-recorded PCM 16kHz audio file
 ```python
 wav_pcm_s16le_file_like = open('test.wav', 'rb')
@@ -94,8 +94,8 @@ class StoppableAudioStream:
 
 a.recognize_speech(StoppableAudioStream(paudio, mic_stream), mic_stopped)
 ```
-##Installation
-###External Dependencies
+## Installation
+### External Dependencies
 This package depends on common python packages as well as my fork of https://github.com/Lukasa/hyper, which has some changes necessary for simultaneous Tx & Rx
 ```bash
 pip install -r requirements.txt
@@ -105,7 +105,7 @@ Add necessary audio files for playback during timers and alarms
 alarm.wav
 timer.wav
 ```
-###`AudioDevice` Setup
+### `AudioDevice` Setup
 The `AudioDevice` is an abstraction of audio playback capability. The required interface is very simple and can be implemented in many ways.
 
 An implementation using `mplayer`:
@@ -194,7 +194,7 @@ class AfplayAudioDevice(AudioDevice):
     def ended(self, p):
         return p.poll() is not None
 ```
-##Test Client
+## Test Client
 The test client `test.py` is provided which has been tested on macOS and raspbian. It uses https://github.com/Kitt-AI/snowboy for detection of the hotword "Alexa" and `pyaudio` for microphone input.
 
 1. At least one of `mplayer` and `afplay` must be available on the system.
@@ -219,7 +219,7 @@ The test client `test.py` is provided which has been tested on macOS and raspbia
 
 4. run `python test.py`
 
-##Notes
+## Notes
 * Tested with Python 3.4
 * whenever the `AVS` instance has to refresh the access token, the new access and refresh tokens will be JSON de-serialized to a file named `tokens.txt` in the schema:
 
